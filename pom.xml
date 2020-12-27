@@ -6,9 +6,9 @@
 
     <groupId>com.tensor.export</groupId>
     <artifactId>export</artifactId>
+    <version>1.0.1-SNAPSHOT</version>
     <!--打包机制，如pom,jar,maven-plugin,ejb,war,ear,rar,par-->
     <packaging>jar</packaging>
-    <version>1.0-SNAPSHOT</version>
 
     <!-- ####################### 环境设置 ###################### -->
     <properties>
@@ -26,46 +26,26 @@
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
-    <!--
-        配置Maven的仓库, 在此处配置的仓库会优先于setting.xml里配置的仓库,
-        建议哪个仓库快,哪个配置在前面, 然后如果Maven在前面配置的仓库找不到的话会去后面的仓库找，
-        如果后面的仓库都找不到，会去setting.xml中央仓库里找
-    -->
-    <repositories>
-        <!-- 阿里云仓库,配置Maven仓库，速度快配置在最前面 -->
-        <repository>
-            <id>aliyun</id>
-            <url>http://maven.aliyun.com/nexus/content/groups/public</url>
-        </repository>
-        <!-- 国内备选仓库 -->
-        <repository>
-            <id>repo2</id>
-            <url>http://repo2.maven.org/maven2/</url>
-        </repository>
-
-        <!-- Cloudera仓库,如果在阿里云仓库里找不到去Cloudera的仓库里找，主要是CDH版本Hadoop依赖的jar -->
-        <repository>
-            <id>cloudera</id>
-            <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-        </repository>
-
-        <!-- Scala仓库,如果前面两个都找不到来仓库找，如果此仓库也找不到，去中央仓库找 -->
-        <repository>
-            <id>scala-tools.org</id>
-            <name>Scala-Tools Maven2 Repository</name>
-            <url>http://scala-tools.org/repo-releases</url>
-        </repository>
-    </repositories>
-
     <build>
         <finalName>tensor</finalName>
         <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
 
             <!-- The configuration of maven-assembly-plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.4</version>
+                <version>3.1.0</version>
                 <!-- 对项目的组装进行配置 -->
                 <configuration>
                     <appendAssemblyId>false</appendAssemblyId>
@@ -73,9 +53,9 @@
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
                     <!-- 指定assembly插件的配置文件所在位置 -->
-                    <descriptors>
+                   <!-- <descriptors>
                         <descriptor>src/main/resources/assembly/package.xml</descriptor>
-                    </descriptors>
+                    </descriptors>-->
                     <archive>
                         <manifest>
                             <!-- 此处指定main方法入口的class -->
@@ -96,40 +76,68 @@
                 </executions>
             </plugin>
 
-            <!-- The configuration of maven-jar-plugin -->
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.4.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.tensor.export.ExportMain</mainClass>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>META-INF/spring.handlers</resource>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>META-INF/spring.schemas</resource>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- The configuration of maven-jar-plugin -->
+           <!-- <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.4</version>
-                <!-- 对要打的jar包进行配置 -->
+                &lt;!&ndash; 对要打的jar包进行配置 &ndash;&gt;
                 <configuration>
-                    <!-- Configuration of the archiver -->
+                    &lt;!&ndash; Configuration of the archiver &ndash;&gt;
                     <archive>
-                        <!--生成的jar中，不要包含pom.xml和pom.properties这两个文件-->
+                        &lt;!&ndash;生成的jar中，不要包含pom.xml和pom.properties这两个文件&ndash;&gt;
                         <addMavenDescriptor>false</addMavenDescriptor>
-                        <!-- Manifest specific configuration -->
+                        &lt;!&ndash; Manifest specific configuration &ndash;&gt;
                         <manifest>
-                            <!--是否要把第三方jar放到manifest的classpath中-->
+                            &lt;!&ndash;是否要把第三方jar放到manifest的classpath中&ndash;&gt;
                             <addClasspath>true</addClasspath>
-                            <!--
+                            &lt;!&ndash;
                             生成的manifest中classpath的前缀，因为要把第三方jar放到lib目录下，所以classpath的前缀是lib/
-                            -->
+                            &ndash;&gt;
                             <classpathPrefix>lib/</classpathPrefix>
                             <mainClass>com.tensor.export.ExportMain</mainClass>
                         </manifest>
                     </archive>
-                    <!--过滤掉不希望包含在jar中的文件-->
+                    &lt;!&ndash;过滤掉不希望包含在jar中的文件&ndash;&gt;
                     <excludes>
-                        <!-- 排除不需要的文件夹(路径是jar包内部的路径) -->
-                        <!--<exclude>**/assembly/</exclude>-->
+                        &lt;!&ndash; 排除不需要的文件夹(路径是jar包内部的路径) &ndash;&gt;
+                        &lt;!&ndash;<exclude>**/assembly/</exclude>&ndash;&gt;
                     </excludes>
                 </configuration>
-            </plugin>
+            </plugin>-->
 
             <!--拷贝依赖的jar包到lib目录-->
-            <!--<plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.10</version>
                 <executions>
                     <execution>
                         <id>copy</id>
@@ -144,7 +152,7 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>-->
+            </plugin>
 
             <!--解决资源文件的编码问题-->
             <plugin>
@@ -218,5 +226,36 @@
 
     </dependencies>
 
+
+    <!--
+    配置Maven的仓库, 在此处配置的仓库会优先于setting.xml里配置的仓库,
+    建议哪个仓库快,哪个配置在前面, 然后如果Maven在前面配置的仓库找不到的话会去后面的仓库找，
+    如果后面的仓库都找不到，会去setting.xml中央仓库里找
+-->
+    <repositories>
+        <!-- 阿里云仓库,配置Maven仓库，速度快配置在最前面 -->
+        <repository>
+            <id>aliyun</id>
+            <url>http://maven.aliyun.com/nexus/content/groups/public</url>
+        </repository>
+        <!-- 国内备选仓库 -->
+        <repository>
+            <id>repo2</id>
+            <url>http://repo2.maven.org/maven2/</url>
+        </repository>
+
+        <!-- Cloudera仓库,如果在阿里云仓库里找不到去Cloudera的仓库里找，主要是CDH版本Hadoop依赖的jar -->
+        <repository>
+            <id>cloudera</id>
+            <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+        </repository>
+
+        <!-- Scala仓库,如果前面两个都找不到来仓库找，如果此仓库也找不到，去中央仓库找 -->
+        <repository>
+            <id>scala-tools.org</id>
+            <name>Scala-Tools Maven2 Repository</name>
+            <url>http://scala-tools.org/repo-releases</url>
+        </repository>
+    </repositories>
 
 </project>
